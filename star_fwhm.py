@@ -10,6 +10,7 @@ from sys import argv
 from astropy.io import fits
 from scipy import ndimage
 from scipy.optimize import curve_fit
+from time import sleep
 
 
 perimeter_width = 0.05 # part of image
