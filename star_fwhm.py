@@ -53,7 +53,8 @@ class FocusFiles():
         self.directory = directory
     def renew(self):
         self.data = ls_dir(self.directory, min_mtime=self.lastmtime)
-        self.lastmtime = mtime( self.data[-1] )
+        if len(self.data) != 0:
+            self.lastmtime = mtime( self.data[-1] )
         return self.data
     
 
