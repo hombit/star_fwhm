@@ -11,6 +11,7 @@ from astropy.io import fits
 from scipy import ndimage
 from scipy.optimize import curve_fit
 from time import sleep
+from argparse import ArgumentParser
 
 
 perimeter_width = 0.05 # part of image
@@ -48,20 +49,23 @@ def gauss(x, a, sigma, x0):
 
 
 class FocusFiles():
-    def __init__(self, directory):
+    def __init__(self, directory, recent_only=False):
         self.data = []
         self.lastmtime = 0
         self.directory = directory
+        self.recent_only = recent_only
     def renew(self):
         self.data = ls_dir(self.directory, min_mtime=self.lastmtime)
         if len(self.data) != 0:
             self.lastmtime = mtime( self.data[-1] )
+            if self.recent_only:
+                self.data = (self.data[-1],)
         return self.data
     
 
-def data_gen(directory, scale):
+def data_gen(directory, scale, recent_only):
     sigma0 = sigma0_arcsec / scale
-    focus_files = FocusFiles(directory)
+    focus_files = FocusFiles(directory, recent_only=recent_only)
     while True:
         focus_files.renew()
         while len(focus_files.data) == 0:
@@ -144,9 +148,32 @@ def run(d, scale, ax1, ax2, line1, line2, cont):
 
 
 def main():
-    if len(argv) > 1:
-        directory = argv[1]
-    scale = float(argv[2])
+    parser = ArgumentParser(description='''
+        Draw star size and contour map from directory with FITS files.
+        Files have to match expression 'focus*NUMBER.EXT', where NUMBER is integer and EXT is something like 'fits' of 'FIT'
+    ''')
+    parser.add_argument( 
+        '-d', '--dir',
+        dest='dir', action='store',
+        default='.', 
+        help='Directory with FITS files (default is current direcory)'
+    )
+    parser.add_argument(
+        '-s', '--scale',
+        dest='scale', action='store',
+        default=1,
+        help="Scale of the image, arcsec  per pixel (defaul is 1''/pixel)"
+    )
+    parser.add_argument(
+        '-r', '--recent-only',
+        dest='recent_only', action='store_true',
+        help="Draw only most recent file, it could be useful when fits appears rapidly or directory is full of files that you wouldn't like to draw (default is false)"
+    )
+    args = parser.parse_args()
+    directory = os.path.expanduser(args.dir)
+    scale = float(args.scale)
+    recent_only = args.recent_only
+
     fig, (ax1, ax2) = plt.subplots(1,2)
     line1, = ax1.plot( [],[], 'x' )
     line2, = ax1.plot( [],[], '*' )
@@ -158,7 +185,7 @@ def main():
     ani = anim.FuncAnimation(
         fig,
         run,
-        frames=data_gen(directory, scale),
+        frames=data_gen(directory, scale, recent_only),
         fargs=(scale, ax1, ax2, line1, line2, cont),
         repeat=False
     )
