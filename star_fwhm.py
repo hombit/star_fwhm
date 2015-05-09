@@ -156,18 +156,18 @@ def main():
         '-d', '--dir',
         dest='dir', action='store',
         default='.', 
-        help='Directory with FITS files (default is current direcory)'
+        help='directory with FITS files (default is current direcory)'
     )
     parser.add_argument(
         '-s', '--scale',
         dest='scale', action='store',
         default=1,
-        help="Scale of the image, arcsec  per pixel (defaul is 1''/pixel)"
+        help="dcale of the image, arcsec  per pixel (defaul is 1''/pixel)"
     )
     parser.add_argument(
         '-r', '--recent-only',
         dest='recent_only', action='store_true',
-        help="Draw only most recent file, it could be useful when fits appears rapidly or directory is full of files that you wouldn't like to draw (default is false)"
+        help="draw only most recent files, it could be useful when fits appears rapidly or directory is full of files that you wouldn't like to draw (default is false)"
     )
     args = parser.parse_args()
     directory = os.path.expanduser(args.dir)
