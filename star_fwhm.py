@@ -30,17 +30,17 @@ fwhm_data_y = []
 def file_number(filename):
     return int(re.search(r'(\d+).\w+$', filename).groups()[0])
 
-def mtime(filename):
-    return os.path.getmtime( filename )
+def ctime(filename):
+    return os.path.getctime( filename )
 
-def ls_dir(directory, min_mtime=0):
+def ls_dir(directory, min_ctime=0):
     ls = [ os.path.join(directory, x) for x in os.listdir(directory) ]
     focus_files = list( filter(
         lambda x:
-            mtime(x) > min_mtime and 'focus' in x,
+            ctime(x) > min_ctime and 'focus' in x,
         ls
     ) )
-    focus_files.sort( key = mtime )
+    focus_files.sort( key = ctime )
     return focus_files
 
 
@@ -51,13 +51,13 @@ def gauss(x, a, sigma, x0):
 class FocusFiles():
     def __init__(self, directory, recent_only=False):
         self.data = []
-        self.lastmtime = 0
+        self.lastctime = 0
         self.directory = directory
         self.recent_only = recent_only
     def renew(self):
-        self.data = ls_dir(self.directory, min_mtime=self.lastmtime)
+        self.data = ls_dir(self.directory, min_ctime=self.lastctime)
         if len(self.data) != 0:
-            self.lastmtime = mtime( self.data[-1] )
+            self.lastctime = ctime( self.data[-1] )
             if self.recent_only:
                 self.data = (self.data[-1],)
         return self.data
