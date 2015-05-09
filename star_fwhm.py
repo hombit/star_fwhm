@@ -162,7 +162,7 @@ def main():
         '-s', '--scale',
         dest='scale', action='store',
         default=1,
-        help="dcale of the image, arcsec  per pixel (defaul is 1''/pixel)"
+        help="scale of the image, arcsec  per pixel (defaul is 1''/pixel)"
     )
     parser.add_argument(
         '-r', '--recent-only',
