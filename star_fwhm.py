@@ -132,8 +132,8 @@ def run(d, scale, ax1, ax2, line1, line2, cont):
         ax1.set_xlim(tmin, tmax)
         ax1.figure.canvas.draw()
     ax1.set_ylim(
-        min( min(fwhm_data_x), min(fwhm_data_y) ) * 0.85,
-        max( max(fwhm_data_x), max(fwhm_data_y) ) * 1.15
+        min( min(fwhm_data_x), min(fwhm_data_y) ) * 0.9,
+        max( max(fwhm_data_x), max(fwhm_data_y) ) * 1.2
     )
     line1.set_data(data_t, fwhm_data_x)
     line2.set_data(data_t, fwhm_data_y)
@@ -175,12 +175,15 @@ def main():
     recent_only = args.recent_only
 
     fig, (ax1, ax2) = plt.subplots(1,2)
-    line1, = ax1.plot( [],[], 'x' )
-    line2, = ax1.plot( [],[], '*' )
+    line1, = ax1.plot( [],[], 'x', label='x FWHM' )
+    line2, = ax1.plot( [],[], '*', label='y FWHM' )
     cont, = ax2.plot( [],[] )
     ax1.set_xlim(0, 100)
     ax1.set_ylim(0.3, 5)
     ax1.grid()
+    ax1.set_xlabel('Number of file')
+    ax1.set_ylabel('FWHM, arcsec')
+    ax1.legend( loc=2, borderaxespad=0. )
     
     ani = anim.FuncAnimation(
         fig,
