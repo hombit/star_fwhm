@@ -147,7 +147,6 @@ def run(d, scale, ax1, ax2, line1, line2, cont):
         max( max(fwhm_data_x), max(fwhm_data_y) ) * 1.2
     )
     data_t_cur = [ ttt - t for ttt in data_t ]
-    print(data_t, data_t_cur)
     line1.set_data(data_t_cur, fwhm_data_x)
     line2.set_data(data_t_cur, fwhm_data_y)
     ax2.cla()
