@@ -11,6 +11,7 @@ from astropy.io import fits
 from scipy import ndimage
 from scipy.optimize import curve_fit
 from time import sleep
+from datetime import datetime, timedelta
 from argparse import ArgumentParser
 
 
@@ -86,24 +87,30 @@ def fits_handler(filename, sigma0):
         background = 0.25 * (data[0:perimeter_xwidth].mean() + data[-perimeter_xwidth:].mean() + data[perimeter_xwidth:-perimeter_xwidth][0:perimeter_ywidth].mean() +  data[perimeter_xwidth:-perimeter_xwidth][-perimeter_ywidth:].mean())
         data = data - background
         x_center, y_center = ( int(np.round(x)) for x in ndimage.center_of_mass(data) )
-	if x_center >= xsize or x_center < 0:
+        if x_center >= xsize or x_center < 0:
             x_center = xsize/2
         if y_center >= ysize or y_center < 0:
             y_center = ysize/2
-        param_x, _ = curve_fit(
-            gauss,
-            np.arange(xsize),
-            data[:,y_center],
-            p0 = ( data[x_center, y_center], sigma0, x_center )
-        )
-        param_y, _ = curve_fit(
-            gauss,
-            np.arange(ysize),
-            data[x_center,:],
-            p0 = ( data[x_center, y_center], sigma0, y_center )
-        )
-        fwhm_x = fwhm2sigma * param_x[1]
-        fwhm_y = fwhm2sigma * param_y[1]
+        try:
+            param_x, _ = curve_fit(
+                gauss,
+                np.arange(xsize),
+                data[:,y_center],
+                p0 = ( data[x_center, y_center], sigma0, x_center )
+            )
+        except RuntimeError:
+            param_x = (0, 0, 0)
+        try:
+            param_y, _ = curve_fit(
+                gauss,
+                np.arange(ysize),
+                data[x_center,:],
+                p0 = ( data[x_center, y_center], sigma0, y_center )
+            )
+        except RuntimeError:
+            param_y = (0, 0, 0)
+        fwhm_x = fwhm2sigma * abs(param_x[1])
+        fwhm_y = fwhm2sigma * abs(param_y[1])
 
         #inner_square = data[x_center-inner_radius:x_center+inner_radius+1, y_center-inner_radius:y_center+inner_radius+1].sum()
         #outer_square = data[x_center-outer_radius:x_center+outer_radius+1, y_center-outer_radius:y_center+outer_radius+1].sum()
@@ -117,7 +124,7 @@ def fits_handler(filename, sigma0):
         data[x_center,:] = 0
         data[:,y_center] = 0
 
-        return file_number(filename), fwhm_x, fwhm_y, X, Y, data[::reduce_ratio,::reduce_ratio]
+        return ctime(filename), fwhm_x, fwhm_y, X, Y, data[::reduce_ratio,::reduce_ratio]
 
 
 
@@ -128,19 +135,21 @@ def run(d, scale, ax1, ax2, line1, line2, cont):
     data_t.append(t)
     fwhm_data_x.append(fwhm_x * scale)
     fwhm_data_y.append(fwhm_y * scale)
-    tmin, tmax = ax1.get_xlim()
-    if t >= tmax:
-        dtlim = tmax - tmin
-        tmax = t
-        tmin = tmax - dtlim
-        ax1.set_xlim(tmin, tmax)
-        ax1.figure.canvas.draw()
+#    tmin, tmax = ax1.get_xlim()
+#    if t >= tmax:
+#        dtlim = tmax - tmin
+#        tmax = t
+#        tmin = tmax - dtlim
+#        ax1.set_xlim(tmin, tmax)
+#        ax1.figure.canvas.draw()
     ax1.set_ylim(
         min( min(fwhm_data_x), min(fwhm_data_y) ) * 0.9,
         max( max(fwhm_data_x), max(fwhm_data_y) ) * 1.2
     )
-    line1.set_data(data_t, fwhm_data_x)
-    line2.set_data(data_t, fwhm_data_y)
+    data_t_cur = [ ttt - t for ttt in data_t ]
+    print(data_t, data_t_cur)
+    line1.set_data(data_t_cur, fwhm_data_x)
+    line2.set_data(data_t_cur, fwhm_data_y)
     ax2.cla()
     line2 = ax2.contourf( X, Y, data, 10 )
     return [line1, line2]
@@ -157,7 +166,7 @@ def main():
         Files have to match expression 'focus*NUMBER.EXT', where NUMBER is integer and EXT is something like 'fits' of 'FIT'
     ''')
     parser.add_argument( 
-        '-d', '--dir',
+       '-d', '--dir',
         dest='dir', action='store',
         default='.', 
         help='directory with FITS files (default is current direcory)'
@@ -182,12 +191,19 @@ def main():
     line1, = ax1.plot( [],[], 'x', label='x FWHM' )
     line2, = ax1.plot( [],[], '*', label='y FWHM' )
     cont, = ax2.plot( [],[] )
-    ax1.set_xlim(0, 100)
+#    ls = ls_dir(directory)
+#    if len(ls) != 0:
+#        xmax = datetime.fromtimestamp(ctime(ls[-1]))
+#    else:
+#        xmax = datetime.now()
+#    xmin = xmax - timedelta(minutes=1)
+    ax1.set_xlim(-120, 0)
     ax1.set_ylim(0.3, 5)
     ax1.grid()
-    ax1.set_xlabel('Number of file')
+    ax1.set_xlabel('Seconds ago')
     ax1.set_ylabel('FWHM, arcsec')
     ax1.legend( loc=2, borderaxespad=0. )
+#    fig.autofmt_xdate()
     
     ani = anim.FuncAnimation(
         fig,
