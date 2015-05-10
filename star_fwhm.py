@@ -86,6 +86,10 @@ def fits_handler(filename, sigma0):
         background = 0.25 * (data[0:perimeter_xwidth].mean() + data[-perimeter_xwidth:].mean() + data[perimeter_xwidth:-perimeter_xwidth][0:perimeter_ywidth].mean() +  data[perimeter_xwidth:-perimeter_xwidth][-perimeter_ywidth:].mean())
         data = data - background
         x_center, y_center = ( int(np.round(x)) for x in ndimage.center_of_mass(data) )
+	if x_center >= xsize or x_center < 0:
+            x_center = xsize/2
+        if y_center >= ysize or y_center < 0:
+            y_center = ysize/2
         param_x, _ = curve_fit(
             gauss,
             np.arange(xsize),
