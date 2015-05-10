@@ -31,17 +31,17 @@ fwhm_data_y = []
 def file_number(filename):
     return int(re.search(r'(\d+).\w+$', filename).groups()[0])
 
-def ctime(filename):
-    return os.path.getctime( filename )
+def mtime(filename):
+    return os.path.getmtime( filename )
 
-def ls_dir(directory, min_ctime=0):
+def ls_dir(directory, min_mtime=0):
     ls = [ os.path.join(directory, x) for x in os.listdir(directory) ]
     focus_files = list( filter(
         lambda x:
-            ctime(x) > min_ctime and 'focus' in x,
+            mtime(x) > min_mtime and 'focus' in x,
         ls
     ) )
-    focus_files.sort( key = ctime )
+    focus_files.sort( key = mtime )
     return focus_files
 
 
@@ -52,13 +52,13 @@ def gauss(x, a, sigma, x0):
 class FocusFiles():
     def __init__(self, directory, recent_only=False):
         self.data = []
-        self.lastctime = 0
+        self.lastmtime = 0
         self.directory = directory
         self.recent_only = recent_only
     def renew(self):
-        self.data = ls_dir(self.directory, min_ctime=self.lastctime)
+        self.data = ls_dir(self.directory, min_mtime=self.lastmtime)
         if len(self.data) != 0:
-            self.lastctime = ctime( self.data[-1] )
+            self.lastmtime = mtime( self.data[-1] )
             if self.recent_only:
                 self.data = (self.data[-1],)
         return self.data
@@ -109,8 +109,10 @@ def fits_handler(filename, sigma0):
             )
         except RuntimeError:
             param_y = (0, 0, 0)
-        fwhm_x = fwhm2sigma * abs(param_x[1])
-        fwhm_y = fwhm2sigma * abs(param_y[1])
+        sigma_x = min( xsize/10, abs(param_x[1]) )
+        sigma_y = min( ysize/10, abs(param_y[1]) )
+        fwhm_x = fwhm2sigma * sigma_x
+        fwhm_y = fwhm2sigma * sigma_y
 
         #inner_square = data[x_center-inner_radius:x_center+inner_radius+1, y_center-inner_radius:y_center+inner_radius+1].sum()
         #outer_square = data[x_center-outer_radius:x_center+outer_radius+1, y_center-outer_radius:y_center+outer_radius+1].sum()
@@ -124,7 +126,7 @@ def fits_handler(filename, sigma0):
         data[x_center,:] = 0
         data[:,y_center] = 0
 
-        return ctime(filename), fwhm_x, fwhm_y, X, Y, data[::reduce_ratio,::reduce_ratio]
+        return mtime(filename), fwhm_x, fwhm_y, X, Y, data[::reduce_ratio,::reduce_ratio]
 
 
 
@@ -133,22 +135,21 @@ def run(d, scale, ax1, ax2, line1, line2, cont):
         return [line1, line2]
     t, fwhm_x, fwhm_y, X, Y, data = d
     data_t.append(t)
+    tmin, tmax = ax1.get_xlim()
     fwhm_data_x.append(fwhm_x * scale)
     fwhm_data_y.append(fwhm_y * scale)
-#    tmin, tmax = ax1.get_xlim()
-#    if t >= tmax:
-#        dtlim = tmax - tmin
-#        tmax = t
-#        tmin = tmax - dtlim
-#        ax1.set_xlim(tmin, tmax)
-#        ax1.figure.canvas.draw()
+    data_dt = []
+    number_of_visible = 0
+    for datum_t in data_t:
+        data_dt.append( datum_t - t )
+        if data_dt[-1] >= tmin:
+            number_of_visible += 1
     ax1.set_ylim(
-        min( min(fwhm_data_x), min(fwhm_data_y) ) * 0.9,
-        max( max(fwhm_data_x), max(fwhm_data_y) ) * 1.2
+        min( min(fwhm_data_x[-number_of_visible:]), min(fwhm_data_y[-number_of_visible:]) ) * 0.9,
+        max( max(fwhm_data_x[-number_of_visible:]), max(fwhm_data_y[-number_of_visible:]) ) * 1.2
     )
-    data_t_cur = [ ttt - t for ttt in data_t ]
-    line1.set_data(data_t_cur, fwhm_data_x)
-    line2.set_data(data_t_cur, fwhm_data_y)
+    line1.set_data(data_dt, fwhm_data_x)
+    line2.set_data(data_dt, fwhm_data_y)
     ax2.cla()
     line2 = ax2.contourf( X, Y, data, 10 )
     return [line1, line2]
@@ -190,12 +191,6 @@ def main():
     line1, = ax1.plot( [],[], 'x', label='x FWHM' )
     line2, = ax1.plot( [],[], '*', label='y FWHM' )
     cont, = ax2.plot( [],[] )
-#    ls = ls_dir(directory)
-#    if len(ls) != 0:
-#        xmax = datetime.fromtimestamp(ctime(ls[-1]))
-#    else:
-#        xmax = datetime.now()
-#    xmin = xmax - timedelta(minutes=1)
     ax1.set_xlim(-120, 0)
     ax1.set_ylim(0.3, 5)
     ax1.grid()
