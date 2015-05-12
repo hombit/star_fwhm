@@ -109,8 +109,8 @@ def fits_handler(filename, sigma0):
             )
         except RuntimeError:
             param_y = (0, 0, 0)
-        sigma_x = min( xsize/10, abs(param_x[1]) )
-        sigma_y = min( ysize/10, abs(param_y[1]) )
+        sigma_x = min( xsize/3, abs(param_x[1]) )
+        sigma_y = min( ysize/3, abs(param_y[1]) )
         fwhm_x = fwhm2sigma * sigma_x
         fwhm_y = fwhm2sigma * sigma_y
 
