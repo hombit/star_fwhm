@@ -169,13 +169,13 @@ def main():
        '-d', '--dir',
         dest='dir', action='store',
         default='.', 
-        help='directory with FITS files (default is current direcory)'
+        help='directory with FITS files (default is current directory)'
     )
     parser.add_argument(
         '-s', '--scale',
         dest='scale', action='store',
         default=1,
-        help="scale of the image, arcsec  per pixel (defaul is 1''/pixel)"
+        help="scale of the image, arcsec  per pixel (default is 1''/pixel)"
     )
     parser.add_argument(
         '-r', '--recent-only',
