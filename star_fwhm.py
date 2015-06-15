@@ -163,7 +163,7 @@ def run(d, scale, ax1, ax2, line1, line2, cont):
 def main():
     parser = ArgumentParser(description='''
         Draw star size and contour map from directory with FITS files.
-        Files have to match expression 'focus*NUMBER.EXT', where NUMBER is integer and EXT is something like 'fits' of 'FIT'
+        Files have to match expression 'focus*NUMBER.EXT', where NUMBER is integer and EXT is something like 'fits' or 'FIT'
     ''')
     parser.add_argument( 
        '-d', '--dir',
