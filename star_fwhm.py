@@ -79,7 +79,12 @@ def data_gen(directory, scale, recent_only):
 
 def fits_handler(filename, sigma0):
     with fits.open(filename) as f:
-        data = f[0].data
+        for part in f:
+            data = part.data
+            if isinstance(data, np.ndarray):
+                break
+        else:
+            raise RuntimeError('Cannot find image data in fitfile: {}'.format(filename))
         xsize = data.shape[0]
         ysize = data.shape[1]
         perimeter_xwidth = int(perimeter_width * xsize)
