@@ -131,7 +131,7 @@ def fits_handler(filename, sigma0):
         data[x_center,:] = 0
         data[:,y_center] = 0
 
-        return mtime(filename), fwhm_x, fwhm_y, X, Y, data[::reduce_ratio,::reduce_ratio]
+    return mtime(filename), fwhm_x, fwhm_y, X, Y, data[::reduce_ratio,::reduce_ratio]
 
 
 
@@ -196,7 +196,7 @@ def main():
     line1, = ax1.plot( [],[], 'x', label='x FWHM' )
     line2, = ax1.plot( [],[], '*', label='y FWHM' )
     cont, = ax2.plot( [],[] )
-    ax1.set_xlim(-120, 0)
+    ax1.set_xlim(-120, 5)
     ax1.set_ylim(0.3, 5)
     ax1.grid()
     ax1.set_xlabel('Seconds ago')
