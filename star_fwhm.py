@@ -77,61 +77,70 @@ def data_gen(directory, scale, recent_only):
             yield fits_handler( filename, sigma0 )
 
 
-def fits_handler(filename, sigma0):
-    with fits.open(filename) as f:
-        for part in f:
-            data = part.data
-            if isinstance(data, np.ndarray):
-                break
-        else:
-            raise RuntimeError('Cannot find image data in fitfile: {}'.format(filename))
-        xsize = data.shape[0]
-        ysize = data.shape[1]
-        perimeter_xwidth = int(perimeter_width * xsize)
-        perimeter_ywidth = int(perimeter_width * ysize)
-        background = 0.25 * (data[0:perimeter_xwidth].mean() + data[-perimeter_xwidth:].mean() + data[perimeter_xwidth:-perimeter_xwidth][0:perimeter_ywidth].mean() +  data[perimeter_xwidth:-perimeter_xwidth][-perimeter_ywidth:].mean())
-        data = data - background
-        x_center, y_center = ( int(np.round(x)) for x in ndimage.center_of_mass(data) )
-        if x_center >= xsize or x_center < 0:
-            x_center = xsize/2
-        if y_center >= ysize or y_center < 0:
-            y_center = ysize/2
-        try:
-            param_x, _ = curve_fit(
-                gauss,
-                np.arange(xsize),
-                data[:,y_center],
-                p0 = ( data[x_center, y_center], sigma0, x_center )
-            )
-        except RuntimeError:
-            param_x = (0, 0, 0)
-        try:
-            param_y, _ = curve_fit(
-                gauss,
-                np.arange(ysize),
-                data[x_center,:],
-                p0 = ( data[x_center, y_center], sigma0, y_center )
-            )
-        except RuntimeError:
-            param_y = (0, 0, 0)
-        sigma_x = min( xsize/3, abs(param_x[1]) )
-        sigma_y = min( ysize/3, abs(param_y[1]) )
-        fwhm_x = fwhm2sigma * sigma_x
-        fwhm_y = fwhm2sigma * sigma_y
+def fits_data_extracter(data, sigma0):
+    xsize = data.shape[0]
+    ysize = data.shape[1]
+    perimeter_xwidth = int(perimeter_width * xsize)
+    perimeter_ywidth = int(perimeter_width * ysize)
+    background = 0.25 * (data[0:perimeter_xwidth].mean() + data[-perimeter_xwidth:].mean() + data[perimeter_xwidth:-perimeter_xwidth][0:perimeter_ywidth].mean() +  data[perimeter_xwidth:-perimeter_xwidth][-perimeter_ywidth:].mean())
+    data = data - background
+    x_center, y_center = ( int(np.round(x)) for x in ndimage.center_of_mass(data) )
+    if x_center >= xsize or x_center < 0:
+        x_center = xsize/2
+    if y_center >= ysize or y_center < 0:
+        y_center = ysize/2
+    try:
+        param_x, _ = curve_fit(
+            gauss,
+            np.arange(xsize),
+            data[:,y_center],
+            p0 = ( data[x_center, y_center], sigma0, x_center )
+        )
+    except RuntimeError:
+        param_x = (0, 0, 0)
+    try:
+        param_y, _ = curve_fit(
+            gauss,
+            np.arange(ysize),
+            data[x_center,:],
+            p0 = ( data[x_center, y_center], sigma0, y_center )
+        )
+    except RuntimeError:
+        param_y = (0, 0, 0)
+    sigma_x = min( xsize/3, abs(param_x[1]) )
+    sigma_y = min( ysize/3, abs(param_y[1]) )
+    fwhm_x = fwhm2sigma * sigma_x
+    fwhm_y = fwhm2sigma * sigma_y
 
-        #inner_square = data[x_center-inner_radius:x_center+inner_radius+1, y_center-inner_radius:y_center+inner_radius+1].sum()
-        #outer_square = data[x_center-outer_radius:x_center+outer_radius+1, y_center-outer_radius:y_center+outer_radius+1].sum()
-        #qual = inner_square/(outer_square-inner_square)
+    #inner_square = data[x_center-inner_radius:x_center+inner_radius+1, y_center-inner_radius:y_center+inner_radius+1].sum()
+    #outer_square = data[x_center-outer_radius:x_center+outer_radius+1, y_center-outer_radius:y_center+outer_radius+1].sum()
+    #qual = inner_square/(outer_square-inner_square)
 
-        reduce_ratio = 1
+    reduce_ratio = 1
 #        if max(xsize,ysize) > preview_max_size:
 #            reduce_ratio = np.ceil(max(xsize, ysize) / preview_max_size)
-        X, Y = np.meshgrid( np.arange(np.ceil(ysize/reduce_ratio)), np.arange(np.ceil(xsize/reduce_ratio)) )
+    X, Y = np.meshgrid( np.arange(np.ceil(ysize/reduce_ratio)), np.arange(np.ceil(xsize/reduce_ratio)) )
 
-        data[x_center,:] = 0
-        data[:,y_center] = 0
+    data[x_center,:] = 0
+    data[:,y_center] = 0
 
-    return mtime(filename), fwhm_x, fwhm_y, X, Y, data[::reduce_ratio,::reduce_ratio]
+    return fwhm_x, fwhm_y, X, Y, data[::reduce_ratio,::reduce_ratio]
+
+
+def fits_handler(filename, sigma0):
+    while True:
+        try:
+            with fits.open(filename) as f:
+                for part in f:
+                    data = part.data
+                    if isinstance(data, np.ndarray):
+                        break
+                else:
+                    raise RuntimeError('Cannot find image data in fitfile: {}'.format(filename))
+            return (mtime(fielname),) + fits_data_extracter(data, sigma0)
+        except IOError as e:
+            print('Something wrong with {}:\n{}\nWe will try to process in again'.format(filename, e))
+        
 
 
 
