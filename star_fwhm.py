@@ -137,7 +137,7 @@ def fits_handler(filename, sigma0):
                         break
                 else:
                     raise RuntimeError('Cannot find image data in fitfile: {}'.format(filename))
-            return (mtime(fielname),) + fits_data_extracter(data, sigma0)
+            return (mtime(filename),) + fits_data_extracter(data, sigma0)
         except IOError as e:
             print('Something wrong with {}:\n{}\nWe will try to process in again'.format(filename, e))
         
