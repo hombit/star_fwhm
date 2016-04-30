@@ -107,6 +107,8 @@ def fits_data_extracter(data, sigma0):
         )
     except RuntimeError:
         param_y = (0, 0, 0)
+    x_center = param_x[2]
+    y_center = param_y[2]
     sigma_x = min( xsize/3, abs(param_x[1]) )
     sigma_y = min( ysize/3, abs(param_y[1]) )
     fwhm_x = fwhm2sigma * sigma_x
