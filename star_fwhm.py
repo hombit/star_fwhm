@@ -140,6 +140,7 @@ def fits_handler(filename, sigma0):
             return (mtime(filename),) + fits_data_extracter(data, sigma0)
         except IOError as e:
             print('Something wrong with {}:\n{}\nWe will try to process in again'.format(filename, e))
+            sleep(0.1)
         
 
 
